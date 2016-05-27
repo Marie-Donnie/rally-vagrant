@@ -6,4 +6,4 @@ https://github.com/BeyondTheClouds/discovery-vagrant
 
 * Get a scenario from rally https://github.com/openstack/rally/tree/master/samples/tasks/scenarios
 * Launch benchmarking with
-> python rally-g5k <pathtoscenario>
+` python rally-g5k "pathtoscenario"`
