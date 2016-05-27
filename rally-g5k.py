@@ -183,49 +183,33 @@ class rally_g5k():
 
 
 	def _get_logs(self, bench_file):
-                # activate_this_file = "rally/bin/activate_this.py"
 
-                # execfile(activate_this_file, dict(__file__=activate_this_file))
 		# Generating the HTML file
 		logger.info("Getting the results into " + self.result_dir)
 		html_file = os.path.splitext(bench_file)[0] + '.html'
 		dest = os.path.join(self.result_dir, html_file)
 		result = os.system("rally task report --out=" + html_file)
-                # print ("--------------------SALUT JE SUIS LA !!--------------------")
-                # print("html : %s" % html_file)
-                # print("dest : %s" % dest)
-                # print("resultat : %s" % result)
+
 		
 		if result != 0:
 			logger.error("Could not generate the HTML result file")
 
-			# if result.processes[0].stderr:
-			# 	logger.error(result.processes[0].stderr)
-		else:
-			# Downloading the HTML file
 
-			# EX.Get(self.host, [html_file], local_location=dest, connection_params={'user': 'root'}).run()
+		else:
 			logger.info("Wrote " + dest)
 
-		# Get the metrics from Rally
-		
+		# Get the metrics from Rally		
 		metrics_file = os.path.join(self.result_dir, os.path.splitext(bench_file)[0] + '.json')
 		result = os.system("rally task results")
-                # print ("--------------------SALUT JE SUIS LA AUSSI !!--------------------")
-                # print("metric : %s" % metrics_file)
-                # print("resultat : %s" % result)  
                 
 
 		if result != 0:
 			logger.error("Could not get the metrics back")
 
-			# if result.processes[0].stderr:
-			# 	logger.error(result.processes[0].stderr)
 		else:
 			# The json is on the standard output of the process
                         os.system("rally task results > %s" % metrics_file)
-			# with open(metrics_file, 'w') as f:
-			# 	f.write(os.system("rally task results"))
+
 			logger.info("Wrote " + metrics_file)
                         
  
