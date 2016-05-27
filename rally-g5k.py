@@ -188,7 +188,7 @@ class rally_g5k():
 		logger.info("Getting the results into " + self.result_dir)
 		html_file = os.path.splitext(bench_file)[0] + '.html'
 		dest = os.path.join(self.result_dir, html_file)
-		result = os.system("rally task report --out=" + html_file)
+		result = os.system("rally task report --out=" + dest)
 
 		
 		if result != 0:
