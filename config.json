@@ -1,0 +1,14 @@
+{
+	"rally-git": "https://git.openstack.org/openstack/rally",
+	"deployment_name": "os-rally",
+	"authentication": {
+	    "os-tenant": "demo",
+	    "os-username": "admin",
+	    "os-password": "admin",
+	    "os-region": "RegionOne",
+	    "os-user-domain": "",
+	    "os-admin-domain": "",
+	    "os-project-domain": "",
+	    "controller": "141.10.10.141"
+	}
+}
