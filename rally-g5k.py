@@ -13,7 +13,6 @@ import jinja2
 
 from optparse import OptionParser
 from string import Template
-from execo_engine import logger
 
 
 # Default values
@@ -53,7 +52,7 @@ class rally_g5k():
 
 	def run(self):
 		"""Perform experiment"""
-		logger.detail(self.options)
+		print("Options : %s" % self.options)
 
 		# Checking the options
 		if len(self.args) < 2:
@@ -65,7 +64,7 @@ class rally_g5k():
 			with open(self.args[0]) as config_file:
 				self.config = json.load(config_file)
 		except:
-			logger.error("Error reading configuration file")
+			print("Error reading configuration file")
 			t, value, tb = sys.exc_info()
 			print str(t) + " " + str(value)
 			exit(3)
@@ -74,11 +73,11 @@ class rally_g5k():
 		for key in defaults:
 			if not key in self.config['authentication'] or self.config['authentication'][key] == "":
 				self.config['authentication'][key] = defaults[key]
-				logger.info("Using default value '%s' for '%s'" % (self.config['authentication'][key], key))
+				print("Using default value '%s' for '%s'" % (self.config['authentication'][key], key))
 
 			if not 'rally-git' in self.config or self.config['rally-git'] == '':
 				self.config['rally-git'] = DEFAULT_RALLY_GIT
-				logger.info("Using default Git for Rally: %s " % self.config['rally-git'])
+				print("Using default Git for Rally: %s " % self.config['rally-git'])
 
 		try:
 			self.rally_deployed = False
@@ -102,11 +101,11 @@ class rally_g5k():
 			i_benchmark = 0
 			for bench_file in self.args[1:]:
 				if not os.path.isfile(bench_file):
-					logger.warn("Ignoring %s which is not a file" % bench_file)
+					print("Ignoring %s which is not a file" % bench_file)
 					continue
 
 				i_benchmark += 1
-				logger.info("[%d/%d] Preparing benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
+				print("[%d/%d] Preparing benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
 
 				v = ''
 				if self.options.verbose:
@@ -114,7 +113,7 @@ class rally_g5k():
 				cmd = "rally %s task start %s" % (v, bench_file)
 				
 
-				logger.info("[%d/%d] Running benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
+				print("[%d/%d] Running benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
 
 				bench_basename = os.path.basename(bench_file)
                                 
@@ -122,13 +121,13 @@ class rally_g5k():
 				rally_task = os.system(cmd)
 
 				if rally_task != 0:
-					logger.error("Error while running benchmark")
+					print("Error while running benchmark")
 					continue
 				else:
                                         # Getting the results back
                                         self._get_logs(bench_basename)
 
-				logger.info('----------------------------------------')
+				print('----------------------------------------')
 		except Exception as e:
 			t, value, tb = sys.exc_info()
 			print str(t) + " " + str(value)
@@ -150,11 +149,11 @@ class rally_g5k():
                         os.chdir('repos')
                         os.system("curl -sO %s" % RALLY_INSTALL_URL)
 
-			logger.info("Installing rally from %s" % self.config['rally-git'])
+			print("Installing rally from %s" % self.config['rally-git'])
                         os.system("bash install_rally.sh -d 'rally' -y --url %s" % self.config['rally-git'])
 
 		else:
-			logger.info("Rally %s is already installed" % test_p.stdout.rstrip())
+			print("Rally %s is already installed" % test_p.stdout.rstrip())
 
 
                 # Activate the virtual environment
@@ -179,24 +178,24 @@ class rally_g5k():
 
 		self.rally_deployed = True
 
-		logger.info("Rally has been deployed correctly")
+		print("Rally has been deployed correctly")
 
 
 	def _get_logs(self, bench_file):
 
 		# Generating the HTML file
-		logger.info("Getting the results into " + self.result_dir)
+		print("Getting the results into " + self.result_dir)
 		html_file = os.path.splitext(bench_file)[0] + '.html'
 		dest = os.path.join(self.result_dir, html_file)
 		result = os.system("rally task report --out=" + dest)
 
 		
 		if result != 0:
-			logger.error("Could not generate the HTML result file")
+			print("Could not generate the HTML result file")
 
 
 		else:
-			logger.info("Wrote " + dest)
+			print("Wrote " + dest)
 
 		# Get the metrics from Rally		
 		metrics_file = os.path.join(self.result_dir, os.path.splitext(bench_file)[0] + '.json')
@@ -204,13 +203,13 @@ class rally_g5k():
                 
 
 		if result != 0:
-			logger.error("Could not get the metrics back")
+			print("Could not get the metrics back")
 
 		else:
 			# The json is on the standard output of the process
                         os.system("rally task results > %s" % metrics_file)
 
-			logger.info("Wrote " + metrics_file)
+			print("Wrote " + metrics_file)
                         
  
 
@@ -224,31 +223,6 @@ class rally_g5k():
 		f.close()
 		
 		return f.name
-
-	def _run_or_abort(self, cmd, host, error_message, tear_down=True, conn_params=None):
-		"""Attempt to run a command on the given host. If the command fails,
-		error_message and the process error output will be printed.
-
-		In addition, if tear_down is True, the tear_down() method will be
-		called and the process will exit with return code 1"""
-
-		if conn_params:
-			p = os.system(cmd, host, conn_params)
-		else:
-			p = os.system(cmd, host)
-		p.run()
-
-		if p.exit_code != 0:
-			logger.warn(error_message)
-
-			if p.stderr is not None:
-				logger.warn(p.stderr)
-
-			logger.info(' '.join(p.cmd))
-
-			if tear_down:
-				self.tear_down()
-				exit(1)
 
 
 
