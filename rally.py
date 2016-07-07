@@ -256,7 +256,8 @@ class rally_vagrant():
 			t, value, tb = sys.exc_info()
 			print str(t) + " " + str(value)
 			traceback.print_tb(tb)
-
+                        exit()
+                        
 ###################
 # Main
 ###################
