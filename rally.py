@@ -1,25 +1,42 @@
+"""Wrapper for rally with vagrant
+
+Usage:
+    rally.py [--vagrant | --vagrant [-m|--mlog]] <config> <file>... [-h | --help][--version]
+
+Options:
+    -h --help       Show this screen
+    --version       Show version
+    --vagrant       Deploys a Discovery-Vagrant machine before executing tests (about an hour execution)
+    -m              Uses my version of Discovery-Vagrant
+    --mlog          Uses my version of Discovery-Vagrant with logs
+
+Arguments:
+    <config>        The config file to use
+    <file>          The scenarios rally will use
+
+"""
+
+
 #!/usr/bin/env python
 
 import traceback
 import logging, time, datetime, signal
-import pprint, os, sys, math
-pp = pprint.PrettyPrinter(indent=4).pprint
+import os, sys, math
 from time import sleep
 import json
 import re
 import tempfile
 
 import jinja2
+from docopt import docopt
 
-from optparse import OptionParser
 from string import Template
 
-
 # Default values
-default_job_name = 'Rally'
-job_path = "/root/"
 RALLY_INSTALL_URL = 'https://raw.githubusercontent.com/openstack/rally/master/install_rally.sh'
 DEFAULT_RALLY_GIT = 'https://git.openstack.org/openstack/rally'
+DEFAULT_DISCO_VAG_GIT = 'https://github.com/BeyondTheClouds/discovery-vagrant.git'
+MARIE_DISCO_VAG_GIT = 'https://github.com/Marie-Donnie/discovery-vagrant.git'
 
 # Time to wait before and after running a benchmark (seconds)
 idle_time = 30
@@ -32,43 +49,27 @@ defaults['os-admin-domain'] = 'default'
 defaults['os-project-domain'] = 'default'
 
 
-class rally_g5k():
+class rally_vagrant():
 
 	def __init__(self):
 		"""Define options for the experiment"""
-
-                parser = OptionParser()
-                parser.add_option("-k", dest="keep_alive",
-				help="Keep the reservation alive.",
-				action="store_true")
-
-		parser.add_option("-f", "--force-deploy", dest="force_deploy", default=False,
-				action="store_true",
-				help="Deploy the node without checking if it is already deployed. (default: %(defaults)s)")
-		parser.add_option("-v", "--rally-verbose", dest="verbose", default=False,
-				action="store_true",
-				help="Make Rally produce more insightful output. (default: %(defaults))")
-                (self.options, self.args) = parser.parse_args()
+                self.argus = docopt(__doc__, version = 'Rally-vagrant 2.0')
+                print(self.argus)
 
 	def run(self):
 		"""Perform experiment"""
-		print("Options : %s" % self.options)
-
-		# Checking the options
-		if len(self.args) < 2:
-			self.parser.print_help()
-			exit(1)
+                print("test")
 
 		# Load the configuration file
 		try:
-			with open(self.args[0]) as config_file:
+			with open(self.argus['<config>']) as config_file:
 				self.config = json.load(config_file)
 		except:
 			print("Error reading configuration file")
 			t, value, tb = sys.exc_info()
 			print str(t) + " " + str(value)
 			exit(3)
-
+                        
 		# Put default values
 		for key in defaults:
 			if not key in self.config['authentication'] or self.config['authentication'][key] == "":
@@ -79,16 +80,19 @@ class rally_g5k():
 				self.config['rally-git'] = DEFAULT_RALLY_GIT
 				print("Using default Git for Rally: %s " % self.config['rally-git'])
 
+                if self.argus['--vagrant']:
+                        self._vagrant_deploy()
+
+                        
 		try:
 			self.rally_deployed = False
-
 
 			# Deploying the host and Rally
 			self.setup_host()
 			
 			# This will be useful in a bit
                         dt = datetime.datetime.now().strftime('%Y%m%d_%H%M')
-                        self.result_dir = os.path.join(os.getcwd(), "rally/results/%s" % dt)
+                        self.result_dir = os.path.join(os.getcwd(), "../results/%s" % dt)
                         if not os.path.exists(self.result_dir):
                                 os.makedirs(self.result_dir)
 
@@ -97,9 +101,9 @@ class rally_g5k():
 
 			# Launch the benchmarks
 
-			n_benchmarks = len(self.args[1:])
+			n_benchmarks = len(self.argus['<file>'])
 			i_benchmark = 0
-			for bench_file in self.args[1:]:
+			for bench_file in self.argus['<file>']:
 				if not os.path.isfile(bench_file):
 					print("Ignoring %s which is not a file" % bench_file)
 					continue
@@ -107,10 +111,7 @@ class rally_g5k():
 				i_benchmark += 1
 				print("[%d/%d] Preparing benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
 
-				v = ''
-				if self.options.verbose:
-					v = '-d'
-				cmd = "rally %s task start %s" % (v, bench_file)
+				cmd = "rally task start %s" % (bench_file)
 				
 
 				print("[%d/%d] Running benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
@@ -128,6 +129,7 @@ class rally_g5k():
                                         self._get_logs(bench_basename)
 
 				print('----------------------------------------')
+                                
 		except Exception as e:
 			t, value, tb = sys.exc_info()
 			print str(t) + " " + str(value)
@@ -193,7 +195,6 @@ class rally_g5k():
 		if result != 0:
 			print("Could not generate the HTML result file")
 
-
 		else:
 			print("Wrote " + dest)
 
@@ -224,13 +225,43 @@ class rally_g5k():
 		
 		return f.name
 
+        def _vagrant_deploy(self):
+                # check if Vagrant and Virtualbox is installed
+                vbox_absent = (os.system("VBoxManage --version"))
+                vagrant_absent = (os.system("vagrant --version"))
+                if vbox_absent:
+                        print("Must have VirtualBox installed")
+			exit()
+                if vagrant_absent:
+                        print("Must have Vagrant installed")
+			exit()
+                # download the correct repository
+                print("Downloading Discovery-Vagrant")
+                dl = DEFAULT_DISCO_VAG_GIT
+                if self.argus['-m']:
+                        print("My version")
+                        dl = MARIE_DISCO_VAG_GIT
+                if self.argus['--mlog']:
+                        print("My version with logs")
+                        dl = "-b my-versions "+ MARIE_DISCO_VAG_GIT
+                os.system("git clone %s" % dl)
+                print(dl)
 
+                # deploy Discovery-Vagrant
+                try :
+                        print("Deploying Discovery-Vagrant")
+                        os.system("cd discovery-vagrant ; ./deploy.sh")
+                        
+                except Exception as e:
+			t, value, tb = sys.exc_info()
+			print str(t) + " " + str(value)
+			traceback.print_tb(tb)
 
 ###################
 # Main
 ###################
 if __name__ == "__main__":
 	#print("Execo version: " + EX._version.__version__)
-	engine = rally_g5k()
+	engine = rally_vagrant()
 	engine.run()
    
