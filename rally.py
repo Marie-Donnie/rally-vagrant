@@ -1,4 +1,4 @@
-"""Wrapper for rally with vagrant
+"""Wrapper for Rally to use with Discovery-Vagrant
 
 Usage:
     rally.py [--vagrant | --vagrant [-m|--mlog]] <config> <file>... [-h | --help][--version]
@@ -12,7 +12,7 @@ Options:
 
 Arguments:
     <config>        The config file to use
-    <file>          The scenarios rally will use
+    <file>          The scenarios Rally will use
 
 """
 
