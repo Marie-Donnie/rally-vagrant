@@ -1,7 +1,7 @@
 """Wrapper for Rally to use with Discovery-Vagrant
 
 Usage:
-    rally.py [--vagrant | --vagrant [-m|--mlog]] <config> <file>... [-h | --help][--version]
+    rally.py [--vagrant | --vagrant [-m|--mlog]] <config> ( --file=<file> | <file>... ) [-h | --help][--version]
 
 Options:
     -h --help       Show this screen
@@ -9,6 +9,7 @@ Options:
     --vagrant       Deploys a Discovery-Vagrant machine before executing tests (about an hour execution)
     -m              Uses my version of Discovery-Vagrant
     --mlog          Uses my version of Discovery-Vagrant with logs
+    --file=<file>   Uses a file containing a list of scenarios
 
 Arguments:
     <config>        The config file to use
@@ -48,6 +49,8 @@ defaults['os-user-domain'] = 'default'
 defaults['os-admin-domain'] = 'default'
 defaults['os-project-domain'] = 'default'
 
+COLOR = '\033[94m'
+ENDC = '\033[0m'
 
 class rally_vagrant():
 
@@ -82,7 +85,6 @@ class rally_vagrant():
 
                 if self.argus['--vagrant']:
                         self._vagrant_deploy()
-
                         
 		try:
 			self.rally_deployed = False
@@ -101,15 +103,31 @@ class rally_vagrant():
 
 			# Launch the benchmarks
 
-			n_benchmarks = len(self.argus['<file>'])
-			i_benchmark = 0
-			for bench_file in self.argus['<file>']:
-				if not os.path.isfile(bench_file):
-					print("Ignoring %s which is not a file" % bench_file)
-					continue
+                        if self.argus['--file'] is not None:
+                                list_bench = self.argus['--file']
+                                if not os.path.isfile(list_bench):
+                                        list_bench = os.path.join(os.getcwd(), '../', self.argus['--file'])
+                                if os.path.isfile(list_bench):
+                                        with open(list_bench, 'r') as bench_file:
+                                                benchmarks = [line.strip() for line in bench_file]
+                                else:
+                                        print("Can't read %s" % self.argus['--file']) 
+                        else:
+                                benchmarks = self.argus['<file>']
+                                
+                        print(benchmarks)
 
+			n_benchmarks = len(benchmarks)
+			i_benchmark = 0
+			for bench_file in benchmarks:
+				if not os.path.isfile(bench_file):
+                                        if not os.path.isfile(os.path.join(os.getcwd(), bench_file)):
+                                                print("Ignoring %s which is not a file" % bench_file)
+                                                continue
+                                        else:
+                                                bench_file = os.path.join(os.getcwd(), bench_file)
 				i_benchmark += 1
-				print("[%d/%d] Preparing benchmark %s" % (i_benchmark, n_benchmarks, bench_file))
+				print("%s[%d/%d] Preparing benchmark %s %s" % (COLOR, i_benchmark, n_benchmarks, bench_file, ENDC))
 
 				cmd = "rally task start %s" % (bench_file)
 				
@@ -128,7 +146,7 @@ class rally_vagrant():
                                         # Getting the results back
                                         self._get_logs(bench_basename)
 
-				print('----------------------------------------')
+				print(COLOR+'----------------------------------------'+ENDC)
                                 
 		except Exception as e:
 			t, value, tb = sys.exc_info()
