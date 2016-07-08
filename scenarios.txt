@@ -1,0 +1,15 @@
+rally/samples/tasks/scenarios/nova/create-and-delete-floating-ips-bulk.json
+rally/samples/tasks/scenarios/nova/create-and-delete-keypair.json
+rally/samples/tasks/scenarios/nova/create-and-delete-network.json
+rally/samples/tasks/scenarios/nova/create-and-delete-secgroups.json
+rally/samples/tasks/scenarios/nova/create-and-list-keypairs.json
+rally/samples/tasks/scenarios/nova/create-and-list-networks.json
+rally/samples/tasks/scenarios/nova/create-and-list-secgroups.json
+rally/samples/tasks/scenarios/nova/create-and-update-secgroups.json
+rally/samples/tasks/scenarios/nova/list-agents.json
+rally/samples/tasks/scenarios/nova/list-aggregates.json
+rally/samples/tasks/scenarios/nova/list-availability-zones.json
+rally/samples/tasks/scenarios/nova/list-hosts.json
+rally/samples/tasks/scenarios/nova/list-hypervisors.json
+rally/samples/tasks/scenarios/nova/list-images.json
+rally/samples/tasks/scenarios/nova/list-services.json
