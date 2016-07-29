@@ -61,7 +61,6 @@ class rally_vagrant():
 
 	def run(self):
 		"""Perform experiment"""
-                print("test")
 
 		# Load the configuration file
 		try:
